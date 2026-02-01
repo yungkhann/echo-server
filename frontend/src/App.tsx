@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import StudentView from "./components/StudentView";
@@ -7,12 +8,10 @@ import AttendanceView from "./components/AttendanceView";
 import UsersView from "./components/UsersView";
 import authService, { type User } from "./services/authService";
 
-type View = "dashboard" | "students" | "schedule" | "attendance" | "users";
-
 function App() {
-  const [isLogin, setIsLogin] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState<View>("dashboard");
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
@@ -24,17 +23,19 @@ function App() {
   const handleLoginSuccess = () => {
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
+    navigate("/dashboard");
   };
 
   const handleRegisterSuccess = () => {
     const currentUser = authService.getCurrentUser();
     setUser(currentUser);
+    navigate("/dashboard");
   };
 
   const handleLogout = () => {
     authService.logout();
     setUser(null);
-    setCurrentView("dashboard");
+    navigate("/login");
   };
 
   if (user) {
@@ -50,11 +51,11 @@ function App() {
               <div className="flex items-center space-x-1">
                 <button
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    currentView === "dashboard"
+                    location.pathname === "/dashboard"
                       ? "bg-gray-900 text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
-                  onClick={() => setCurrentView("dashboard")}
+                  onClick={() => navigate("/dashboard")}
                 >
                   Dashboard
                 </button>
@@ -63,11 +64,11 @@ function App() {
                   user.role === "student") && (
                   <button
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      currentView === "students"
+                      location.pathname === "/students"
                         ? "bg-gray-900 text-white"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
-                    onClick={() => setCurrentView("students")}
+                    onClick={() => navigate("/students")}
                   >
                     Students
                   </button>
@@ -77,11 +78,11 @@ function App() {
                   user.role === "student") && (
                   <button
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      currentView === "schedule"
+                      location.pathname === "/schedule"
                         ? "bg-gray-900 text-white"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
-                    onClick={() => setCurrentView("schedule")}
+                    onClick={() => navigate("/schedule")}
                   >
                     Schedule
                   </button>
@@ -89,11 +90,11 @@ function App() {
                 {(user.role === "admin" || user.role === "teacher") && (
                   <button
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      currentView === "attendance"
+                      location.pathname === "/attendance"
                         ? "bg-gray-900 text-white"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
-                    onClick={() => setCurrentView("attendance")}
+                    onClick={() => navigate("/attendance")}
                   >
                     Attendance
                   </button>
@@ -101,11 +102,11 @@ function App() {
                 {user.role === "admin" && (
                   <button
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      currentView === "users"
+                      location.pathname === "/users"
                         ? "bg-gray-900 text-white"
                         : "text-gray-600 hover:bg-gray-100"
                     }`}
-                    onClick={() => setCurrentView("users")}
+                    onClick={() => navigate("/users")}
                   >
                     Users
                   </button>
@@ -128,46 +129,51 @@ function App() {
         </nav>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {currentView === "dashboard" && (
-            <div className="bg-white rounded-lg shadow-sm p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                Welcome, {user.full_name || user.email}
-              </h1>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gray-900 text-white rounded-lg p-6">
-                  <h3 className="text-sm font-medium opacity-80 mb-2">Role</h3>
-                  <p className="text-2xl font-bold capitalize">{user.role}</p>
+          <Routes>
+            <Route path="/dashboard" element={
+              <div className="bg-white rounded-lg shadow-sm p-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">
+                  Welcome, {user.full_name || user.email}
+                </h1>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-gray-900 text-white rounded-lg p-6">
+                    <h3 className="text-sm font-medium opacity-80 mb-2">Role</h3>
+                    <p className="text-2xl font-bold capitalize">{user.role}</p>
+                  </div>
+                  <div className="bg-gray-900 text-white rounded-lg p-6">
+                    <h3 className="text-sm font-medium opacity-80 mb-2">
+                      User ID
+                    </h3>
+                    <p className="text-2xl font-bold">{user.id}</p>
+                  </div>
+                  <div className="bg-gray-900 text-white rounded-lg p-6">
+                    <h3 className="text-sm font-medium opacity-80 mb-2">
+                      Account Created
+                    </h3>
+                    <p className="text-2xl font-bold">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-gray-900 text-white rounded-lg p-6">
-                  <h3 className="text-sm font-medium opacity-80 mb-2">
-                    User ID
-                  </h3>
-                  <p className="text-2xl font-bold">{user.id}</p>
-                </div>
-                <div className="bg-gray-900 text-white rounded-lg p-6">
-                  <h3 className="text-sm font-medium opacity-80 mb-2">
-                    Account Created
-                  </h3>
-                  <p className="text-2xl font-bold">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </p>
-                </div>
+                <p className="text-center text-gray-600">
+                  {user.role === "admin" &&
+                    "You have full access to all features"}
+                  {user.role === "teacher" &&
+                    "You can view schedules and manage attendance"}
+                  {user.role === "student" &&
+                    "You can view your schedules and student information"}
+                </p>
               </div>
-              <p className="text-center text-gray-600">
-                {user.role === "admin" &&
-                  "You have full access to all features"}
-                {user.role === "teacher" &&
-                  "You can view schedules and manage attendance"}
-                {user.role === "student" &&
-                  "You can view your schedules and student information"}
-              </p>
-            </div>
-          )}
-
-          {currentView === "students" && <StudentView />}
-          {currentView === "schedule" && <ScheduleView />}
-          {currentView === "attendance" && <AttendanceView />}
-          {currentView === "users" && <UsersView />}
+            } />
+            <Route path="/students" element={<StudentView />} />
+            <Route path="/schedule" element={<ScheduleView />} />
+            <Route path="/attendance" element={<AttendanceView />} />
+            <Route path="/users" element={<UsersView />} />
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </div>
       </div>
     );
@@ -175,17 +181,21 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {isLogin ? (
-        <Login
-          onSwitchToRegister={() => setIsLogin(false)}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      ) : (
-        <Register
-          onSwitchToLogin={() => setIsLogin(true)}
-          onRegisterSuccess={handleRegisterSuccess}
-        />
-      )}
+      <Routes>
+        <Route path="/login" element={
+          <Login
+            onSwitchToRegister={() => navigate("/register")}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        } />
+        <Route path="/register" element={
+          <Register
+            onSwitchToLogin={() => navigate("/login")}
+            onRegisterSuccess={handleRegisterSuccess}
+          />
+        } />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     </div>
   );
 }
