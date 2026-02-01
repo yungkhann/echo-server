@@ -36,7 +36,7 @@ export default function UsersView() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<CreateStudentForm>({
     user_id: 0,
-    gender: "Male",
+    gender: "male",
     birth_date: "",
     group_id: 0,
   });
@@ -80,7 +80,7 @@ export default function UsersView() {
     setSelectedUser(user);
     setFormData({
       user_id: user.id,
-      gender: "Male",
+      gender: "male",
       birth_date: "",
       group_id: groups.length > 0 ? groups[0].id : 0,
     });
@@ -244,9 +244,9 @@ export default function UsersView() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 
