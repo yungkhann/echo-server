@@ -1,0 +1,14 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: API for managing university students, schedules, and attendance
+  title: University Management API
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

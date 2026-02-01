@@ -5,10 +5,19 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	_ "github.com/yungkhann/echo-server/docs"
 	"github.com/yungkhann/echo-server/internal/database"
 	custommiddleware "github.com/yungkhann/echo-server/internal/middleware"
 )
 
+// @title University Management API
+// @version 1.0
+// @description API for managing university students, schedules, and attendance
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
 func main() {
 	godotenv.Load()
 
