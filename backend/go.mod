@@ -1,6 +1,6 @@
 module github.com/yungkhann/echo-server
 
-go 1.25.5
+go 1.23
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
