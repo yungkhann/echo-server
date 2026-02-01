@@ -66,3 +66,23 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+// RequireRole checks if the user has one of the specified roles
+func RequireRole(roles ...string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			userRole, ok := c.Get("user_role").(string)
+			if !ok {
+				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+			}
+
+			for _, role := range roles {
+				if userRole == role {
+					return next(c)
+				}
+			}
+
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "Access denied: insufficient permissions"})
+		}
+	}
+}

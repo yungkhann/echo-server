@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"regexp"
@@ -100,9 +101,8 @@ func RegisterHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Password must be 6 words length"})
 	}
 
-	// Validate role
 	if req.Role == "" {
-		req.Role = "student" // Default role
+		req.Role = "student"
 	}
 	if req.Role != "student" && req.Role != "teacher" && req.Role != "admin" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid role. Must be student, teacher, or admin"})
@@ -185,14 +185,44 @@ func GetMeHandler(c echo.Context) error {
 	userID := c.Get("user_id").(int)
 
 	var user User
-	query := `SELECT id, email, role, full_name, created_at FROM users WHERE id = $1`
+	query := `SELECT id, email, COALESCE(role, 'student') as role, COALESCE(full_name, '') as full_name, created_at FROM users WHERE id = $1`
 	err := pool.QueryRow(context.Background(), query, userID).Scan(&user.ID, &user.Email, &user.Role, &user.FullName, &user.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "User not found"})
 		}
+		fmt.Printf("GetMeHandler error: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
 	}
 
 	return c.JSON(http.StatusOK, user)
+}
+
+func GetAllUsersHandler(c echo.Context) error {
+	fmt.Println("GetAllUsersHandler called")
+	query := `SELECT id, email, COALESCE(role, 'student') as role, COALESCE(full_name, '') as full_name, created_at FROM users ORDER BY created_at DESC`
+	rows, err := pool.Query(context.Background(), query)
+	if err != nil {
+		fmt.Printf("Database query error: %v\n", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.ID, &user.Email, &user.Role, &user.FullName, &user.CreatedAt)
+		if err != nil {
+			fmt.Printf("Row scan error: %v\n", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		fmt.Printf("Rows iteration error: %v\n", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Database error"})
+	}
+
+	return c.JSON(http.StatusOK, users)
 }

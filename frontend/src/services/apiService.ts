@@ -7,6 +7,17 @@ const getAuthHeaders = () => ({
   Authorization: `Bearer ${authService.getToken()}`,
 });
 
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      authService.logout();
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  },
+);
+
 export interface Student {
   id?: number;
   full_name: string;
@@ -33,7 +44,6 @@ export interface Attendance {
 }
 
 class ApiService {
-  // Student endpoints
   async getStudent(id: number): Promise<Student> {
     const response = await axios.get(`${API_URL}/student/${id}`, {
       headers: getAuthHeaders(),
@@ -41,7 +51,6 @@ class ApiService {
     return response.data;
   }
 
-  // Schedule endpoints
   async getAllSchedule(): Promise<Schedule[]> {
     const response = await axios.get(`${API_URL}/all_class_schedule`, {
       headers: getAuthHeaders(),
@@ -56,7 +65,6 @@ class ApiService {
     return response.data;
   }
 
-  // Attendance endpoints
   async postAttendance(data: Attendance): Promise<any> {
     const response = await axios.post(`${API_URL}/attendance/subject`, data, {
       headers: getAuthHeaders(),

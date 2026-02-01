@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import authService from "../services/authService";
 import apiService, { type Attendance } from "../services/apiService";
+
+const API_URL = "http://localhost:8080";
+
+interface Subject {
+  id: number;
+  subject_name: string;
+  subject_code: string;
+  credits: number;
+}
 
 export default function AttendanceView() {
   const [studentId, setStudentId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [viewMode, setViewMode] = useState<"student" | "subject" | null>(null);
 
-  // Form for posting attendance
   const [newAttendance, setNewAttendance] = useState({
     student_id: "",
     subject_id: "",
@@ -17,6 +28,23 @@ export default function AttendanceView() {
     visited: true,
   });
   const [postSuccess, setPostSuccess] = useState("");
+
+  useEffect(() => {
+    loadSubjects();
+  }, []);
+
+  const loadSubjects = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/subjects`, {
+        headers: {
+          Authorization: `Bearer ${authService.getToken()}`,
+        },
+      });
+      setSubjects(response.data);
+    } catch (err: any) {
+      console.error("Failed to load subjects:", err);
+    }
+  };
 
   const loadAttendanceByStudent = async () => {
     if (!studentId) return;
@@ -103,9 +131,7 @@ export default function AttendanceView() {
               required
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
             />
-            <input
-              type="number"
-              placeholder="Subject ID"
+            <select
               value={newAttendance.subject_id}
               onChange={(e) =>
                 setNewAttendance({
@@ -115,7 +141,14 @@ export default function AttendanceView() {
               }
               required
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-            />
+            >
+              <option value="">Select Subject</option>
+              {subjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.subject_name} ({subject.subject_code})
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex gap-4 items-center">
             <input
@@ -173,22 +206,29 @@ export default function AttendanceView() {
           />
           <button
             onClick={loadAttendanceByStudent}
-            className="px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
+            disabled={!studentId}
+            className="px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             View by Student
           </button>
         </div>
         <div className="flex gap-2">
-          <input
-            type="number"
-            placeholder="Subject ID"
+          <select
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-          />
+          >
+            <option value="">Select Subject</option>
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.subject_name} ({subject.subject_code})
+              </option>
+            ))}
+          </select>
           <button
             onClick={loadAttendanceBySubject}
-            className="px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
+            disabled={!subjectId}
+            className="px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             View by Subject
           </button>
@@ -205,7 +245,7 @@ export default function AttendanceView() {
         <div className="text-center py-8 text-gray-600">Loading...</div>
       ) : (
         <div className="overflow-x-auto">
-          {attendances.length === 0 ? (
+          {!attendances || attendances.length === 0 ? (
             viewMode && (
               <p className="text-center py-8 text-gray-500">
                 No attendance records found

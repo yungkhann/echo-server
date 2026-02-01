@@ -4,9 +4,10 @@ import Register from "./components/Register";
 import StudentView from "./components/StudentView";
 import ScheduleView from "./components/ScheduleView";
 import AttendanceView from "./components/AttendanceView";
+import UsersView from "./components/UsersView";
 import authService, { type User } from "./services/authService";
 
-type View = "dashboard" | "students" | "schedule" | "attendance";
+type View = "dashboard" | "students" | "schedule" | "attendance" | "users";
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
@@ -97,6 +98,18 @@ function App() {
                     Attendance
                   </button>
                 )}
+                {user.role === "admin" && (
+                  <button
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      currentView === "users"
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                    onClick={() => setCurrentView("users")}
+                  >
+                    Users
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center space-x-3">
@@ -154,6 +167,7 @@ function App() {
           {currentView === "students" && <StudentView />}
           {currentView === "schedule" && <ScheduleView />}
           {currentView === "attendance" && <AttendanceView />}
+          {currentView === "users" && <UsersView />}
         </div>
       </div>
     );
