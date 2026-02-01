@@ -12,6 +12,7 @@ import (
 type JWTClaims struct {
 	UserID int    `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -60,6 +61,7 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		c.Set("user_id", claims.UserID)
 		c.Set("user_email", claims.Email)
+		c.Set("user_role", claims.Role)
 
 		return next(c)
 	}

@@ -5,6 +5,8 @@ const API_URL = "http://localhost:8080/api/auth";
 export interface User {
   id: number;
   email: string;
+  role: string;
+  full_name?: string;
   created_at: string;
 }
 
@@ -16,6 +18,8 @@ export interface LoginResponse {
 export interface RegisterData {
   email: string;
   password: string;
+  role: string;
+  full_name: string;
 }
 
 export interface LoginData {

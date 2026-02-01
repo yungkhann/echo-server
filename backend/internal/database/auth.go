@@ -17,12 +17,16 @@ type User struct {
 	ID        int       `json:"id"`
 	Email     string    `json:"email"`
 	Password  string    `json:"-"`
+	Role      string    `json:"role"`
+	FullName  string    `json:"full_name,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type RegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
+	FullName string `json:"full_name"`
 }
 
 type LoginRequest struct {
@@ -38,6 +42,7 @@ type LoginResponse struct {
 type JWTClaims struct {
 	UserID int    `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -66,10 +71,11 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func GenerateJWT(userID int, email string) (string, error) {
+func GenerateJWT(userID int, email string, role string) (string, error) {
 	claims := JWTClaims{
 		UserID: userID,
 		Email:  email,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -94,6 +100,14 @@ func RegisterHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Password must be 6 words length"})
 	}
 
+	// Validate role
+	if req.Role == "" {
+		req.Role = "student" // Default role
+	}
+	if req.Role != "student" && req.Role != "teacher" && req.Role != "admin" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid role. Must be student, teacher, or admin"})
+	}
+
 	var existingUser User
 	err := pool.QueryRow(context.Background(), "SELECT id FROM users WHERE email = $1", req.Email).Scan(&existingUser.ID)
 	if err == nil {
@@ -106,13 +120,14 @@ func RegisterHandler(c echo.Context) error {
 	}
 
 	var userID int
-	query := `INSERT INTO users (email, password, created_at) VALUES ($1, $2, $3) RETURNING id`
-	err = pool.QueryRow(context.Background(), query, req.Email, hashedPassword, time.Now()).Scan(&userID)
+	var role string
+	query := `INSERT INTO users (email, password, role, full_name, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id, role`
+	err = pool.QueryRow(context.Background(), query, req.Email, hashedPassword, req.Role, req.FullName, time.Now()).Scan(&userID, &role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create user"})
 	}
 
-	token, err := GenerateJWT(userID, req.Email)
+	token, err := GenerateJWT(userID, req.Email, role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 	}
@@ -122,6 +137,8 @@ func RegisterHandler(c echo.Context) error {
 		User: User{
 			ID:        userID,
 			Email:     req.Email,
+			Role:      role,
+			FullName:  req.FullName,
 			CreatedAt: time.Now(),
 		},
 	})
@@ -134,8 +151,8 @@ func LoginHandler(c echo.Context) error {
 	}
 
 	var user User
-	query := `SELECT id, email, password, created_at FROM users WHERE email = $1`
-	err := pool.QueryRow(context.Background(), query, req.Email).Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt)
+	query := `SELECT id, email, password, role, full_name, created_at FROM users WHERE email = $1`
+	err := pool.QueryRow(context.Background(), query, req.Email).Scan(&user.ID, &user.Email, &user.Password, &user.Role, &user.FullName, &user.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email or password"})
@@ -147,7 +164,7 @@ func LoginHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email or password"})
 	}
 
-	token, err := GenerateJWT(user.ID, user.Email)
+	token, err := GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 	}
@@ -157,6 +174,8 @@ func LoginHandler(c echo.Context) error {
 		User: User{
 			ID:        user.ID,
 			Email:     user.Email,
+			Role:      user.Role,
+			FullName:  user.FullName,
 			CreatedAt: user.CreatedAt,
 		},
 	})
@@ -166,8 +185,8 @@ func GetMeHandler(c echo.Context) error {
 	userID := c.Get("user_id").(int)
 
 	var user User
-	query := `SELECT id, email, created_at FROM users WHERE id = $1`
-	err := pool.QueryRow(context.Background(), query, userID).Scan(&user.ID, &user.Email, &user.CreatedAt)
+	query := `SELECT id, email, role, full_name, created_at FROM users WHERE id = $1`
+	err := pool.QueryRow(context.Background(), query, userID).Scan(&user.ID, &user.Email, &user.Role, &user.FullName, &user.CreatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "User not found"})
